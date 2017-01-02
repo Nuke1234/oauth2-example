@@ -1,20 +1,20 @@
 "use strict";
+
 const Koa = require('koa');
 const crypto = require('crypto');
 const auth = require('basic-auth');
-
-const app = new Koa();
 const router = require('koa-router')();
 const koaBody = require('koa-body')();
+const app = new Koa();
 const DB = require('mongodb-next');
 
-const db = DB('mongodb://localhost/oauth2', {
+const db = DB('mongodb://mongo:27017/oauth2', {
     w: 'majority'
 });
 
 async function basicAuth(ctx, next) {
     const user = auth(ctx);
-    const result = await db.collection('clients').find({clientId: user.name, secret: user.pass});
+    const result = await db.collection('clients').find({client_id: user.name, secret: user.pass});
 
     if (result && result.length === 1) {
         ctx.user = result[0];
@@ -44,23 +44,25 @@ router.post("/register", koaBody, async ctx => {
     }
 
     let client = {
-        clientId: crypto.randomBytes(32).toString('hex'),
+        client_id: crypto.randomBytes(32).toString('hex'),
         secret: crypto.randomBytes(48).toString('hex'),
         name: ctx.request.body.name,
-        redirectURI: ctx.request.body.redirect_uri
+        redirect_uri: ctx.request.body.redirect_uri
     };
 
     const result = await db.collection('clients').insert(client);
 
+    ctx.set('Content-Type', 'application/json;charset=utf-8');
     ctx.status = 201;
     ctx.body = JSON.stringify(client);
+
 });
 
 router.get("/authorize", koaBody, async ctx => {
     ctx.status = 302;
 
     let result = "";
-    let redirectURI = ctx.query.redirect_uri || "";
+    let redirect_uri = ctx.query.redirect_uri || "";
     try {
         if(!ctx.query.response_type  || !ctx.query.client_id) {
             throw "invalid_request";
@@ -71,23 +73,25 @@ router.get("/authorize", koaBody, async ctx => {
         }
 
         let connection = {
-            clientId: ctx.query.client_id,
+            client_id: ctx.query.client_id,
             resourceOwner: ctx.query.username,
-            authorization_code: crypto.randomBytes(32).toString('hex')
         };
 
-        const client = await db.collection('clients').findOne({clientId: connection.clientId});
+        const client = await db.collection('clients').findOne({client_id: connection.client_id});
 
         if (!client) {
             throw "unauthorized_client";
         }
 
-        if(ctx.query.redirect_uri && ctx.query.redirect_uri !==client.redirectURI) {
+        if(ctx.query.redirect_uri && ctx.query.redirect_uri !==client.redirect_uri) {
             throw "invalid_request";
         }
-        redirectURI = client.redirectURI;
+        redirect_uri = client.redirect_uri;
         if(ctx.query.response_type === "token") {
             connection.tokens = generateTokens(false);
+        } else {
+            connection.authorization_code = crypto.randomBytes(32).toString('hex');
+            connection.authorization_code_expires_in = new Date(Date.now() + 3600*24*30);
         }
 
         await db.collection('connections').insert(connection);
@@ -108,7 +112,7 @@ router.get("/authorize", koaBody, async ctx => {
         if(ctx.query.state) {
             result += `&state=${ctx.query.state}`;
         }
-        ctx.set('Location', redirectURI + (redirectURI.indexOf("?") < 0 ? "?" : "&") + result);
+        ctx.set('Location', redirect_uri + (redirect_uri.indexOf("?") < 0 ? "?" : "&") + result);
     }
 });
 
@@ -126,17 +130,23 @@ router.post("/token", koaBody, basicAuth, async ctx => {
             throw "unsupported_grant_type";
         }
 
-        if (ctx.request.body.redirect_uri !== ctx.user.redirectURI) {
+        if (ctx.request.body.redirect_uri !== ctx.user.redirect_uri) {
             throw "invalid_request";
         }
 
         let connection = await db.collection('connections').findOne({authorization_code: ctx.request.body.code});
 
-        if (!connection || connection.clientId !== ctx.user.clientId) {
+        if (!connection || connection.client_id !== ctx.user.client_id) {
+            throw "invalid_grant";
+        }
+
+        if(connection.authorization_code_expires_in < Date.now()) {
+            await db.collection('connections').findOne(connection._id).remove();
             throw "invalid_grant";
         }
 
         delete connection.authorization_code;
+        delete connection.authorization_code_expires_in;
 
         connection.tokens = generateTokens();
 
@@ -155,4 +165,4 @@ router.post("/token", koaBody, basicAuth, async ctx => {
 });
 
 app.use(router.routes());
-app.listen(3000);
+app.listen(process.env.NODE_PORT);

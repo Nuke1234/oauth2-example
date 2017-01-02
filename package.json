@@ -9,11 +9,15 @@
     }
   ],
   "scripts": {
-    "dev": "nodemon server.js"
+    "start-dev": "NODE_PORT=9000 forever start --uid oauth-dev --append --killSignal=SIGTERM -c 'nodemon --exitcrash --harmony-async-await --debug' ./server.js",
+    "stop-dev": "forever stop oauth-dev",
+    "start": "NODE_PORT=9000 forever start --uid oauth-dev --append --killSignal=SIGTERM -c 'nodemon --exitcrash --harmony-async-await --debug' ./server.js",
+    "start-old": "NODE_PORT=9000 nodemon --harmony-async-await --debug ./server.js",
+    "stop": "forever stop oauth"
   },
   "private": true,
   "license": "MIT",
-  "devDependencies": {
+  "dependencies": {
     "basic-auth": "^1.1.0",
     "crypto": "0.0.3",
     "koa": "^2.0.0",
