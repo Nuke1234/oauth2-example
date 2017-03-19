@@ -9,21 +9,22 @@
     }
   ],
   "scripts": {
-    "start-dev": "NODE_PORT=9000 forever start --uid oauth-dev --append --killSignal=SIGTERM -c 'nodemon --exitcrash --harmony-async-await --debug' ./server.js",
-    "stop-dev": "forever stop oauth-dev",
-    "start": "NODE_PORT=9000 forever start --uid oauth-dev --append --killSignal=SIGTERM -c 'nodemon --exitcrash --harmony-async-await --debug' ./server.js",
-    "start-old": "NODE_PORT=9000 nodemon --harmony-async-await --debug ./server.js",
+    "test": "NODE_PORT=7000 node --harmony-async-await node_modules/jasmine/bin/jasmine.js spec/server-spec.js",
+    "start": "NODE_PORT=9000 nodemon --harmony-async-await --debug ./server.js",
     "stop": "forever stop oauth"
   },
   "private": true,
   "license": "MIT",
   "dependencies": {
-    "basic-auth": "^1.1.0",
     "crypto": "0.0.3",
     "koa": "^2.0.0",
     "koa-body": "^2.0.0",
     "koa-router": "^7.0.1",
     "mongodb": "^2.2.16",
     "mongodb-next": "^0.8.0"
+  },
+  "devDependencies": {
+    "jasmine": "^2.5.3",
+    "request": "^2.79.0"
   }
 }

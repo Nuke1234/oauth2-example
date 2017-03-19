@@ -1,0 +1,16 @@
+{
+  "name": "mongo-basic-auth",
+  "version": "0.0.1",
+  "description": "basic auth module for koa2 using mongodb",
+  "author": "Karl Neumann",
+  "scripts": {
+    "test": "jasmine-node spec"
+  },
+  "private": true,
+  "license": "MIT",
+  "dependencies": {
+    "basic-auth": "^1.1.0",
+    "mongodb": "^2.2.16",
+    "mongodb-next": "^0.8.0"
+  }
+}

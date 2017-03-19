@@ -1,28 +1,18 @@
 "use strict";
 
-const Koa = require('koa');
+const connection = 'mongodb://mongo:27017/oauth2';
+
+const app = new (require('koa'))({conn : connection});
 const crypto = require('crypto');
-const auth = require('basic-auth');
 const router = require('koa-router')();
 const koaBody = require('koa-body')();
-const app = new Koa();
+
 const DB = require('mongodb-next');
 
-const db = DB('mongodb://mongo:27017/oauth2', {
-    w: 'majority'
-});
+const db = DB(connection, {w: 'majority'});
 
-async function basicAuth(ctx, next) {
-    const user = auth(ctx);
-    const result = await db.collection('clients').find({client_id: user.name, secret: user.pass});
 
-    if (result && result.length === 1) {
-        ctx.user = result[0];
-        await next();
-    } else {
-        ctx.status = 401;
-    }
-}
+const basicAuth = require("./modules/mongo-basic-auth")(connection);
 
 function generateTokens(generateRefreshToken = true) {
     let tokens = {
@@ -163,6 +153,7 @@ router.post("/token", koaBody, basicAuth, async ctx => {
         ctx.body = JSON.stringify({error:error});
     }
 });
+
 
 app.use(router.routes());
 app.listen(process.env.NODE_PORT);

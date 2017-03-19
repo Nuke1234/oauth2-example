@@ -1,0 +1,9 @@
+version: "2"
+services:
+  sut:
+    build: .
+    volumes:
+      - "./:/app"
+    links:
+      - "mongo"
+    entrypoint: npm test
