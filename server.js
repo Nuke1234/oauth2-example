@@ -26,7 +26,7 @@ function generateTokens(generateRefreshToken = true) {
     }
     return tokens;
 }
-
+//the router
 router.post("/register", koaBody, async ctx => {
     if (!ctx.request.body.name || !ctx.request.body.redirect_uri) {
         ctx.status = 400;
