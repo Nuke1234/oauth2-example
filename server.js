@@ -73,7 +73,7 @@ router.get("/authorize", koaBody, async ctx => {
             throw "unauthorized_client";
         }
 
-        if(ctx.query.redirect_uri && ctx.query.redirect_uri !==client.redirect_uri) {
+        if(ctx.query.redirect_uri && ctx.query.redirect_uri !== client.redirect_uri) {
             throw "invalid_request";
         }
         redirect_uri = client.redirect_uri;
